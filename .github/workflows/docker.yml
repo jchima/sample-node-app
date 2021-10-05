@@ -47,7 +47,7 @@ jobs:
           type=raw,value=latest,enable=${{ endsWith(GitHub.ref, 'master') }}
           type=ref,event=tag
         flavor: |
-          latest=false
+          latest=true
           
     - name: Login to GitHub Container Registry
         #if: GitHub.event_name != 'pull_request'
