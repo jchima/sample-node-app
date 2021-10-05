@@ -45,9 +45,9 @@ jobs:
         #images: ghcr.io/${{ github.repository_owner }}/sample-node-app
         #tags: |
           #type=raw,value=latest,enable=${{ endsWith(GitHub.ref, 'master') }}
-          type=ref,event=tag
+          #type=ref,event=tag
         #flavor: |
-          latest=false
+          #latest=false
           
     - name: Login to GitHub Container Registry
         #if: GitHub.event_name != 'pull_request'
