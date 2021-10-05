@@ -1,7 +1,6 @@
 name: Dockerize Node.js App
 
 on:
-  workflow_dispatch:
   push:
     branches: [ master ]
     tags:
