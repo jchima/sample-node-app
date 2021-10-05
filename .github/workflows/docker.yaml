@@ -48,7 +48,7 @@ jobs:
           type=ref,event=tag
         flavor: |
           latest=false
-    - name: Login to GitHub Container Registry
+    - name: Login to GitHub Container Registryy
         #if: GitHub.event_name != 'pull_request'
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
