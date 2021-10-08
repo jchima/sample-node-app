@@ -1,15 +1,15 @@
-name: Dockerize Node.js App
+# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Volunteerism Frontend Image Build and Publish
 
 on:
   push:
     branches: [ master ]
-    tags:
-      - 'v*'
   pull_request:
     branches: [ master ]
 
-  release:
-    types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,53 +17,76 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [16.x] #Track .nvmrc version
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v2
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    #- run: npm i -D semantic-release
-    #- run: npm run
-    #- run: npm i -g jest-cli
-    #- run: npm test
-    # - run: npx semantic-release
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v2
 
-    - name: Docker meta
-      id: meta
-      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-      #uses: docker/metadata-action@v1
-      with:
-        images: ghcr.io/${{ github.repository_owner }}/sample-node-app
-        tags: |
-          type=raw,value=latest,enable=${{ endsWith(GitHub.ref, 'master') }}
-          type=ref,event=tag
-        flavor: |
-          latest=true
-          
-    - name: Login to GitHub Container Registry
-        #if: GitHub.event_name != 'pull_request'
-      #uses: docker/login-action@v1
-      uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Build and push
-      #uses: docker/build-push-action@v1
-      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-      with:
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1.10
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Reads the latest tag on the repo and increments its minor verions
+      # Increment style can be changed by including a #major, #minor, or #patch in a commit message
+      - name: Bump version and push tag
+        id: tag_version
+        uses: anothrNick/github-tag-action@1.35.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BRANCHES: master
+          WITH_V: true
+
+      # Collate the image name, tags, and labels for push command
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v3.5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ endsWith(GitHub.ref, 'main') }}
+            type=raw,value=${{ steps.tag_version.outputs.new_tag }}
+            type=raw,value=${{ env.GITHUB_REF }}
+            type=raw,value=${{ env.GITHUB_SHA }}
+
+      # Build, Tag and Push the docker image to Github Container Registry
+      - name: Build, Tag and Push Docker Image
+        uses: docker/build-push-action@v2.7
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: ${{ env.GITHUB_REPOSITORY }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # Creates a Semantic Release with commit hash
+      - name: Create a GitHub Semantic release
+        uses: actions/create-release@v1.1.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          release_name: ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+
+      # Sends a slack notification to slack build channel on failure
+      - name: Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      # Sends a slack notification to slack build channel
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2.2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: Job for Release ${{ steps.tag_version.outputs.new_tag }} completed successfully.
