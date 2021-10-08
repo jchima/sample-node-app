@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x] #Track .nvmrc version
+        node-version: [14.x] #Track .nvmrc version
 
     steps:
       - name: Checkout
