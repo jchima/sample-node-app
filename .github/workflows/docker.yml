@@ -17,14 +17,14 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x] #Track .nvmrc version
+        node-version: [16.x] #Track .nvmrc version
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1.10
+        uses: docker/login-action@v1.10.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -43,7 +43,7 @@ jobs:
       # Collate the image name, tags, and labels for push command
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v3.5
+        uses: docker/metadata-action@v3.5.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -54,7 +54,7 @@ jobs:
 
       # Build, Tag and Push the docker image to Github Container Registry
       - name: Build, Tag and Push Docker Image
-        uses: docker/build-push-action@v2.7
+        uses: docker/build-push-action@v2.7.0
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -86,7 +86,7 @@ jobs:
 
       # Sends a slack notification to slack build channel
       - name: Slack Notification
-        uses: rtCamp/action-slack-notify@v2.2
+        uses: rtCamp/action-slack-notify@v2.2.0
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_MESSAGE: Job for Release ${{ steps.tag_version.outputs.new_tag }} completed successfully.
