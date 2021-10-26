@@ -30,3 +30,8 @@ jobs:
         
   docker:
       uses: jchima/node-js-getting-started/.github/workflows/dockerBuildandPush.yml@main
+      with:
+        image_name: ${{ github.repository }}
+      secrets:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
