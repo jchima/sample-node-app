@@ -14,4 +14,4 @@ on:
         
 jobs:
   call-workflow-1:
-    uses: jchima/node-js-getting-started/.github/workflows/dockerBuildandPush.yml@v0.18.0
+    uses: submittable/volunteerism-poc/.github/workflows/buildAndPublish.yml@0.21.0
